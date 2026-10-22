@@ -7,32 +7,48 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v3
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Node & Cordova
-        run: |
-          npm install -g cordova
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      - name: Create Cordova Project
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform and build tools
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Install Cordova
+        run: npm install -g cordova
+
+      - name: Create Cordova project and copy web files
         run: |
           cordova create app com.freemesh.app FreeMesh
           cd app
-          cordova platform add android
           rm -rf www/*
-          cp -r ../* www/ || true
-          cordova build android --debug
+          cp ../index.html ../ornek.html ../icon.png ../icon-192.png ../manifest.json www/
+          cordova platform add android
+
+      - name: Build APK
+        run: |
+          cd app
+          cordova build android
 
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: FreeMesh-App
+          name: free-mesh-apk
           path: app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
